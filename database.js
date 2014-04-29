@@ -1,4 +1,5 @@
 var Sequelize = require('sequelize');
+var async = require('async');
 
 var database = module.exports;
 
@@ -118,8 +119,30 @@ database.initModel = function(callback) {
 	       console.log('An error occurred while creating the table:', err);
 	       callback(err, null);
 	     } else {
-	       console.log('It worked!');
-	       callback(null, exports);
+	       database.buildCache(function() {
+	       	 callback(null, database);	
+	       });
 	     }
-	  });    	
+	});    	
+};
+
+database.getKeyword = function(text, callback) {
+	database.Keyword
+	.findOrCreate({
+  		text : text
+  	})
+	.success(function(kw, created) {
+		callback(null, { keyword : kw, created : created});
+	});
+}
+
+database.buildCache = function(callback) {
+	database.cache.keywords = {};
+	database.Keyword.findAll().success(function(keywords) {
+		for(var i=0;i<keywords.length;i++) {
+			var keyword = keywords[i];
+			database.cache.keywords[keyword.text] = keyword;
+		}
+		callback();
+	});
 };

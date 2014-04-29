@@ -2,13 +2,13 @@
 var alchemy = require('./alchemy.js');
 var database = require('./database.js');
 var async = require('async');
-var Base58 = require('base58');
 
 exports.slurp = function (req, res, next) {
 	alchemy.transmuteURL(req.params.url, function(err, gold) {
 		var result = { url : gold.url };
 
 		async.waterfall([
+			// build base weblink object
 		    function(callback) {
 				var weblink = database.WebLink
 				.build({
@@ -25,32 +25,31 @@ exports.slurp = function (req, res, next) {
 					callback(null, result);
 				});
 		    },
-		    
-		    function(data, callback){
-		    	var buf = new Buffer(JSON.stringify(data.gold), 'hex');
-				var potion = database.Potion
-				.build({
-			  		text : buf.toString()
-			  	})
-			  	.save()
-				.error(function(err) {
-					callback(err, null);
-				})
-				.success(function() {
-					result.weblink.setTarget(potion).complete(function(err){
-						callback(null, { weblink : data.weblink, potion : potion});				
-					});
-				});
+
+		    // build and link all keyword objects
+		    function(data, callback) {
+		    	async.each(data.gold.keywords, function(keyword, eachcb) {
+		    		database.getKeyword(keyword.text, function(kw) {
+		    			eachcb();
+		    		});
+		    	}, 
+		    	function(err) {
+		    		if(err) callback(err, null);
+		    		else callback(null, data);
+		    	});
 		    },
-		    
+
+		    // build and link taxonomy
 		    function(data, callback){
 		        callback(null, data);
 		    }], 
 			
+			// done
 			function (err, data) {
 				res.send(data);
 				return next();	
-			});
+			}
+		);
 	});
 };
 
