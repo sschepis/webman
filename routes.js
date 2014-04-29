@@ -43,6 +43,13 @@ exports.slurp = function (req, res, next) {
 		    	else callback(null, data);
 		    },
 
+		    // build and link categories
+		    function(data, callback){
+		    	if(data.weblink.created === true) {
+		    	}
+		        else callback(null, data);
+		    }, 
+
 		    // build and link taxonomy
 		    function(data, callback){
 		    	if(data.weblink.created === true) {

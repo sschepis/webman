@@ -23,94 +23,103 @@ database.connect = function(callback) {
 };
 
 database.initModel = function(callback) {
+	
+	// user
 	database.User = database.sequelize.define('User', {
 	  username: Sequelize.STRING,
 	  password: Sequelize.STRING
 	});
 
+	// user weblink joins
+	database.UserWebLink = database.sequelize.define('UserWebLink', {
+		title: Sequelize.STRING,
+		notes: Sequelize.STRING
+	});
+
+	// user weblink semantic data joins
+	database.UserWebLinkKeyword = database.sequelize.define('UserWebLinkKeyword', {
+		score: Sequelize.FLOAT
+	});
+	database.UserWebLinkCategory = database.sequelize.define('UserWebLinkCategory', {
+		score: Sequelize.FLOAT
+	});
+	database.UserWebLinkConcept = database.sequelize.define('UserWebLinkConcept', {
+	  score: Sequelize.FLOAT
+	});
+	database.UserWebLinkTaxonomy = database.sequelize.define('UserWebLinkTaxonomy', {
+	  score: Sequelize.FLOAT
+	});
+
+	// weblink
 	database.WebLink = database.sequelize.define('WebLink', {
 	  title: Sequelize.STRING,
-	  url: Sequelize.STRING
+	  url: Sequelize.STRING,
+	  imageurl: Sequelize.STRING,
+	  content: Sequelize.STRING
 	});
-
-	database.WebLinkKeyword = database.sequelize.define('WebLinkKeyword', {
-	  relevance: Sequelize.FLOAT
-	});
-
-	database.Keyword = database.sequelize.define('Keyword', {
-	  value: Sequelize.STRING
-	});
-
-	database.Concept = database.sequelize.define('Concept', {
-	  text: Sequelize.STRING,
-	  relevance: Sequelize.FLOAT,
-	  website: Sequelize.STRING
-	});
-
-	database.ConceptWebsite = database.sequelize.define('ConceptWebsite', {
-	  name: Sequelize.STRING,
-	  url: Sequelize.STRING
-	});
-
 	database.Website = database.sequelize.define('Website', {
 	  title: Sequelize.STRING,
 	  url: Sequelize.STRING
 	});
 
+	// semantic data
 	database.Category = database.sequelize.define('Category', {
+	  title: Sequelize.STRING
+	});
+	database.Keyword = database.sequelize.define('Keyword', {
+	  value: Sequelize.STRING
+	});
+	database.Concept = database.sequelize.define('Concept', {
 	  text: Sequelize.STRING
 	});
-
-	database.WebLinkCategory = database.sequelize.define('WebLinkCategory', {
-	  score: Sequelize.FLOAT
-	});	
-
-	database.Content = database.sequelize.define('Content', {
-	  text: Sequelize.TEXT
+	database.ConceptMeta = database.sequelize.define('ConceptMeta', {
+	  name: Sequelize.STRING,
+	  value: Sequelize.STRING
 	});
-
-	database.Image = database.sequelize.define('Image', {
-	  text: Sequelize.STRING
-	});
-
 	database.Taxonomy = database.sequelize.define('Taxonomy', {
-	  label: Sequelize.STRING,
+	  label: Sequelize.STRING
+	});
+
+	// weblink semantic data joins
+	database.WebLinkTaxonomy = database.sequelize.define('WebLinkTaxonomy', {
 	  score: Sequelize.FLOAT,
 	  confident: Sequelize.BOOLEAN
 	});
-
-	database.Potion = database.sequelize.define('Potion', {
-	  text: Sequelize.TEXT
+	database.WebLinkCategory = database.sequelize.define('WebLinkCategory', {
+	  score: Sequelize.FLOAT
+	});	
+	database.WebLinkKeyword = database.sequelize.define('WebLinkKeyword', {
+	  relevance: Sequelize.FLOAT
+	});
+	database.WebLinkConcept = database.sequelize.define('WebLinkConcept', {
+	  score: Sequelize.FLOAT
 	});
 
-	database.User.hasMany(database.WebLink);
-	database.WebLink.belongsTo(database.User);
-	database.Website.hasMany(database.WebLink);
+	database.User.hasMany(database.UserWebLink);
+	database.WebLink.hasMany(database.UserWebLink);
+	database.UserWebLink.belongsTo(database.User);
 
-	database.WebLink.hasOne(database.Potion);
-	database.Potion.belongsTo(database.WebLink);
-
-	database.WebLink.hasMany(database.WebLinkKeyword);
-	database.WebLinkKeyword.belongsTo(database.WebLink);
-	database.Keyword.hasMany(database.WebLinkKeyword);
+	database.Website.hasMany(database.WebLink);	
+	database.WebLink.hasOne(database.Website);
+	database.WebLink.belongsTo(database.Website);
 
 	database.WebLink.hasOne(database.WebLinkCategory);
+	database.WebLink.hasMany(database.WebLinkKeyword);
+	database.WebLink.hasMany(database.WebLinkTaxonomy);
+	database.WebLink.hasMany(database.WebLinkConcept);
+
+	database.Category.hasMany(database.WebLinkCategory);
+	database.Keyword.hasMany(database.WebLinkKeyword);
+	database.Taxonomy.hasMany(database.WebLinkTaxonomy);
+	database.Concept.hasMany(database.WebLinkConcept);
+
+	database.Concept.hasMany(database.ConceptMeta);	
+	database.ConceptMeta.belongsTo(database.Concept);
+	
 	database.WebLinkCategory.belongsTo(database.WebLink);
-	database.WebLinkCategory.hasOne(database.Category);
-
-	database.WebLink.hasOne(database.Content);
-	database.Content.belongsTo(database.WebLink);
-
-	database.WebLink.hasOne(database.Image);
-	database.Image.belongsTo(database.WebLink);
-
-	database.WebLink.hasMany(database.Taxonomy);
-	database.Taxonomy.belongsTo(database.WebLink);
-
-	database.WebLink.hasMany(database.Concept);
-	database.Concept.belongsTo(database.WebLink);
-	database.Concept.hasMany(database.ConceptWebsite);
-	database.ConceptWebsite.belongsTo(database.Concept);
+	database.WebLinkKeyword.belongsTo(database.WebLink);
+	database.WebLinkTaxonomy.belongsTo(database.WebLink);
+	database.WebLinkConcept.belongsTo(database.WebLink);
 	
 	database.sequelize
 	  .sync({ force:true })
@@ -165,6 +174,34 @@ database.linkWebLinkToKeyword = function(weblink, keyword, relevance, callback) 
 	})
 	.success(function(ret, created) {
 		callback(null, { weblinkKeyword : ret, created : created});
+	});
+};
+
+database.getCategory = function(fields, callback) {
+	var category = database.Category
+	.findOrCreate({
+  		title : fields.title
+  	})    	
+	.success(function(ret, created) {
+	    callback(null, { 
+		 	category : ret, 
+		 	created : created
+		});
+	});
+};
+
+database.linkWebLinkToCategory = function(weblink, category, score, callback) {
+	var weblinkKeyword = database.WebLinkCategory
+	.findOrCreate({
+		WebLinkId : weblink.id,
+		CategoryId : category.id,
+  		score : score
+  	})    	
+	.error(function(err) {
+		callback(err, null);
+	})
+	.success(function(ret, created) {
+		callback(null, { weblinkCategory : ret, created : created});
 	});
 };
 
