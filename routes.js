@@ -8,42 +8,62 @@ exports.slurp = function (req, res, next) {
 		var result = { url : gold.url };
 
 		async.waterfall([
+			
 			// build base weblink object
 		    function(callback) {
-				var weblink = database.WebLink
-				.build({
+		    	database.getWebLink({
 			  		title : gold.title.title,
 			    	url : gold.url
-			  	})    	
-				.save()
-				.error(function(err) {
-					callback(err, null);
-				})
-				.success(function() {
-					result.weblink = weblink;
-					result.gold = gold;
-					callback(null, result);
-				});
+			  	}, function(err, ret) {
+			  		if(err) callback(err, null);
+			  		else callback(null, { 
+			  			gold : gold, 
+			  			weblink : ret 
+			  		});
+			  	});
 		    },
 
 		    // build and link all keyword objects
 		    function(data, callback) {
-		    	async.each(data.gold.keywords, function(keyword, eachcb) {
-		    		database.getKeyword(keyword.text, function(kw) {
-		    			eachcb();
-		    		});
-		    	}, 
-		    	function(err) {
-		    		if(err) callback(err, null);
-		    		else callback(null, data);
-		    	});
+		    	// only process alchemy data if a new weblink
+		    	if(data.weblink.created === true) {
+			    	async.each(data.gold.combined.keywords, function(wlkw, eachcb) {
+			    		database.getKeyword(wlkw.text, function(err, kwd) {
+			    			database.linkWebLinkToKeyword(data.weblink.weblink, kwd.keyword, wlkw.relevance, 
+			    			function() {
+			    				eachcb();
+			    			});
+			    		});
+			    	}, 
+			    	function(err) {
+			    		if(err) callback(err, null);
+			    		else callback(null, data);
+			    	});		    		
+		    	} 
+		    	else callback(null, data);
 		    },
 
 		    // build and link taxonomy
 		    function(data, callback){
-		        callback(null, data);
-		    }], 
-			
+		    	if(data.weblink.created === true) {
+		    	}
+		        else callback(null, data);
+		    }, 
+		    
+		    // build and link concepts
+		    function(data, callback){
+		    	if(data.weblink.created === true) {
+		    	}
+		        else callback(null, data);
+		    }, 
+
+		    // build and link concepts
+		    function(data, callback){
+		    	if(data.weblink.created === true) {
+		    	}
+		        else callback(null, data);
+		    }],
+
 			// done
 			function (err, data) {
 				res.send(data);

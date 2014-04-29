@@ -4,7 +4,7 @@ var async = require('async');
 var database = module.exports;
 
 database.connect = function(callback) {
-    database.sequelize = new Sequelize('webman', 'root', 'root', {
+    database.sequelize = new Sequelize('webman', 'root', '', {
       dialect: "mariadb",
       port:    3306,
     });
@@ -92,7 +92,7 @@ database.initModel = function(callback) {
 
 	database.WebLink.hasMany(database.WebLinkKeyword);
 	database.WebLinkKeyword.belongsTo(database.WebLink);
-	database.WebLinkKeyword.hasOne(database.Keyword);
+	database.Keyword.hasMany(database.WebLinkKeyword);
 
 	database.WebLink.hasOne(database.WebLinkCategory);
 	database.WebLinkCategory.belongsTo(database.WebLink);
@@ -126,17 +126,50 @@ database.initModel = function(callback) {
 	});    	
 };
 
-database.getKeyword = function(text, callback) {
-	database.Keyword
+database.getKeyword = function(value, callback) {
+	var keyword = database.Keyword
 	.findOrCreate({
-  		text : text
+  		value : value
   	})
-	.success(function(kw, created) {
-		callback(null, { keyword : kw, created : created});
+	.success(function(ret, created) {
+		callback(null, { 
+			keyword : ret, 
+			created : created
+		});
 	});
-}
+};
+
+database.getWebLink = function(fields, callback) {
+	var weblink = database.WebLink
+	.findOrCreate({
+  		title : fields.title,
+    	url : fields.url
+  	})    	
+	.success(function(ret, created) {
+	    callback(null, { 
+		 	weblink : ret, 
+		 	created : created
+		});
+	});
+};
+
+database.linkWebLinkToKeyword = function(weblink, keyword, relevance, callback) {
+	var weblinkKeyword = database.WebLinkKeyword
+	.findOrCreate({
+		WebLinkId : weblink.id,
+		KeywordId : keyword.id,
+  		relevance : relevance
+  	})    	
+	.error(function(err) {
+		callback(err, null);
+	})
+	.success(function(ret, created) {
+		callback(null, { weblinkKeyword : ret, created : created});
+	});
+};
 
 database.buildCache = function(callback) {
+	database.cache = {};
 	database.cache.keywords = {};
 	database.Keyword.findAll().success(function(keywords) {
 		for(var i=0;i<keywords.length;i++) {
