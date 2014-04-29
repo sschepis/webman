@@ -115,7 +115,7 @@ database.initModel = function(callback) {
 
 	database.Concept.hasMany(database.ConceptMeta);	
 	database.ConceptMeta.belongsTo(database.Concept);
-	
+
 	database.WebLinkCategory.belongsTo(database.WebLink);
 	database.WebLinkKeyword.belongsTo(database.WebLink);
 	database.WebLinkTaxonomy.belongsTo(database.WebLink);
@@ -128,9 +128,7 @@ database.initModel = function(callback) {
 	       console.log('An error occurred while creating the table:', err);
 	       callback(err, null);
 	     } else {
-	       database.buildCache(function() {
-	       	 callback(null, database);	
-	       });
+	       callback(null, database);	
 	     }
 	});    	
 };
@@ -177,6 +175,15 @@ database.linkWebLinkToKeyword = function(weblink, keyword, relevance, callback) 
 	});
 };
 
+database.setWebLinkKeyword = function(weblink, keyword, relevance, callback) {
+	database.getKeyword(keyword, function(err, ret) {
+		database.linkWebLinkToKeyword(weblink, ret.keyword, relevance, 
+		function(err, ret) {
+			callback(err, ret);
+		});
+	});
+}
+
 database.getCategory = function(fields, callback) {
 	var category = database.Category
 	.findOrCreate({
@@ -205,14 +212,11 @@ database.linkWebLinkToCategory = function(weblink, category, score, callback) {
 	});
 };
 
-database.buildCache = function(callback) {
-	database.cache = {};
-	database.cache.keywords = {};
-	database.Keyword.findAll().success(function(keywords) {
-		for(var i=0;i<keywords.length;i++) {
-			var keyword = keywords[i];
-			database.cache.keywords[keyword.text] = keyword;
-		}
-		callback();
+database.setWebLinkCategory = function(weblink, category, score, callback) {
+	database.getCategory(category, function(err, ret) {
+		database.linkWebLinkToCategory(weblink, ret.category, score, 
+		function(err, ret) {
+			callback(err, ret);
+		});
 	});
-};
+}
