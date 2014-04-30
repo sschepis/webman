@@ -3,10 +3,25 @@ var alchemy = require('./alchemy.js');
 var database = require('./database.js');
 var async = require('async');
 var zlib = require('zlib');
+var inspect = require('eyes').inspector({maxLength:20000});
+var pdf_extract = require('pdf-extract');
+var http = require('http');
+var request = require('request');
+var crypto = require('crypto');
+var fs = require('fs');
+
 
 exports.slurp = function (req, res, next) {
+	if(req.params.u === '') {
+		res.send({message:'no url specified'});
+		return next();		
+	}
+	var theUrl = req.params.u;
+	if(theUrl.endsWith('.pdf')) theUrl = '/pdf?u=' + theUrl;
 	alchemy.transmuteURL(req.params.u, function(err, gold) {
 		var result = { url : gold.url };
+		if(req.params.u.endsWith('.pdf'))
+			result.url = req.params.u;
 
 		async.waterfall([
 			
@@ -144,12 +159,50 @@ exports.slurp = function (req, res, next) {
 	});
 };
 
+exports.pdfToText = function (req, res, next) {
+	var pdfUrl = req.params.u;
+	res.contentType = 'text/html';
+	res.header('Content-Type','text/html');
+	if(pdfUrl!=='') {
+		var md5sum = crypto.createHash('md5');
+		md5sum.update(pdfUrl);
+		var local = '/tmp/' + md5sum.digest('hex') + '.pdf';
+
+		var file = fs.createWriteStream(local);
+		var rem = request(pdfUrl);
+		rem.on('data', function(chunk) {
+		    file.write(chunk);
+		});
+		rem.on('end', function() {
+			var processor = pdf_extract(local, {type:'text'}, function(err) {
+			  if (err) return callback(err);
+			});
+			processor.on('complete', function(data) {
+			    inspect(data.text_pages, 'extracted text pages');
+			    var pagesText = data.text_pages.join('\n');
+			    res.send("<html><head></head><body><pre>" + pagesText + "</pre></body></html>");
+			    return next();	
+			});
+			processor.on('error', function(err) {
+			    inspect(err, 'error while extracting pages');
+			    res.send(err);
+			    return next();
+			});
+		});		
+	} 
+	else {
+	    res.send("<html><head></head><body></body></html>");
+	    return next();		
+	}
+}
+
 function getSystemUser(callback) {
 	database.getUser('sschepis', callback);
 }
 
 exports.initRoutes = function(server, callback) {
 	server.get('/', exports.slurp);
+	server.get('/pdf', exports.pdfToText);
 	callback(null, {});	
 };
 

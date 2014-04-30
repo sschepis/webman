@@ -5,10 +5,30 @@ var database = require('./database.js');
 var routes = require('./routes.js');
 var alchemy = require("./alchemy.js");
 
+if (typeof String.prototype.endsWith !== 'function') {
+    String.prototype.endsWith = function(suffix) {
+        return this.indexOf(suffix, this.length - suffix.length) !== -1;
+    };
+}
+
 var server = restify.createServer({
-  name: 'webman',
-  version: '1.0.0'
+    name : 'webman',
+    version : '0.0.1',
+    formatters: {
+        'application/json': function(req, res, body){
+            if(req.params.callback){
+                var callbackFunctionName = req.params.callback.replace(/[^A-Za-z0-9_\.]/g, '');
+                return callbackFunctionName + "(" + JSON.stringify(body) + ");";
+            } else {
+                return JSON.stringify(body);
+            }
+        },
+        'text/html': function(req, res, body){
+            return body;
+        }
+    }
 });
+
 server.use(restify.acceptParser(server.acceptable));
 server.use(restify.queryParser());
 server.use(restify.bodyParser());
