@@ -4,7 +4,7 @@ var async = require('async');
 var database = module.exports;
 
 database.connect = function(callback) {
-    database.sequelize = new Sequelize('webman', 'root', '', {
+    database.sequelize = new Sequelize('webman', 'root', 'root', {
       dialect: "mariadb",
       port:    3306,
     });
@@ -146,7 +146,7 @@ database.initModel = function(callback) {
 	database.UserWebLink.belongsTo(database.User);
 
 	database.sequelize
-	  .sync({force:true})
+	  .sync()
 	  .complete(function(err) {
 	     if (!!err) {
 	       console.log('An error occurred while creating the table:', err);

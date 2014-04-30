@@ -5,7 +5,7 @@ var async = require('async');
 var zlib = require('zlib');
 
 exports.slurp = function (req, res, next) {
-	alchemy.transmuteURL(req.params.url, function(err, gold) {
+	alchemy.transmuteURL(req.params.u, function(err, gold) {
 		var result = { url : gold.url };
 
 		async.waterfall([
@@ -137,13 +137,7 @@ exports.slurp = function (req, res, next) {
 
 			// done
 			function (err, ret) {
-				res.send({
-					id : ret.weblink.weblink.id,
-					title : ret.weblink.weblink.title,
-					url : ret.weblink.weblink.url,
-					createdAt : ret.weblink.weblink.createdAt,
-					updatedAt : ret.weblink.weblink.createdAt,
-				});
+				res.send(ret);
 				return next();	
 			}
 		);
@@ -155,7 +149,7 @@ function getSystemUser(callback) {
 }
 
 exports.initRoutes = function(server, callback) {
-	server.get('/slurp', exports.slurp);
+	server.get('/', exports.slurp);
 	callback(null, {});	
 };
 
