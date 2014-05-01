@@ -4,7 +4,7 @@ var async = require('async');
 var database = module.exports;
 
 database.connect = function(callback) {
-    database.sequelize = new Sequelize('webman', 'root', 'root', {
+    database.sequelize = new Sequelize('webman', 'root', '', {
       dialect: "mariadb",
       port:    3306,
     });

@@ -12,6 +12,7 @@ var fs = require('fs');
 
 
 exports.slurp = function (req, res, next) {
+	res.contentType = 'application/json';
 	if(req.params.u === '') {
 		res.send({message:'no url specified'});
 		return next();		
@@ -50,9 +51,9 @@ exports.slurp = function (req, res, next) {
 		    	async.each(data.gold.combined.keywords, function(keyword, eachcb) {
 	    			database.setWebLinkKeyword(data.weblink.weblink, keyword.text, keyword.relevance, 
 	    			function() { eachcb(); });
-		    	}, function() {});		    		
-
-		    	callback(null, data);
+		    	}, function() {
+		    		callback(null, data);
+		    	});		    		
 		    },
 
 		    // build and link categories
@@ -63,9 +64,9 @@ exports.slurp = function (req, res, next) {
 	    			data.weblink.weblink, 
 	    			category.category, 
 	    			category.score, 
-	    			function() {});
-
-		        callback(null, data);
+		    	function() {
+		    		callback(null, data);
+		    	});		    		
 		    }, 
 
 		    // build and link taxonomy
@@ -79,10 +80,11 @@ exports.slurp = function (req, res, next) {
 	    				taxonomy.label, 
 	    				taxonomy.score, 
 	    				confident,  
-	    				function() {});
+			    		function() {});		    		
 	    			eachcb(); 
+		    	},function(){
+		    		callback(null, data);
 		    	});	
-		    	callback(null, data);
 		    }, 
 
 		    // build and link concepts
@@ -103,8 +105,10 @@ exports.slurp = function (req, res, next) {
     						function(){});
 		    		});
 					cb1();
+		    	},function(){
+		    		callback(null, data);
 		    	});
-		    	callback(null, data);
+		    	
 		    }, 
 
 		    // build and link entities
@@ -133,8 +137,9 @@ exports.slurp = function (req, res, next) {
     						ein.count, function(){});
 		    		});
 					cb1();
+		    	},function(){
+		    		callback(null, data);
 		    	});
-		    	callback(null, data);
 		    }],
 
 			// done
@@ -147,6 +152,7 @@ exports.slurp = function (req, res, next) {
 };
 
 exports.pdfToText = function (req, res, next) {
+	res.contentType = 'text/html';
 	var pdfUrl = req.params.u;
 	if(pdfUrl!=='') {
 		var md5sum = crypto.createHash('md5');
