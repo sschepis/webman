@@ -160,11 +160,11 @@ exports.pdfToText = function (req, res, next) {
 		var local = '/tmp/' + md5sum.digest('hex') + '.pdf';
 
 		var file = fs.createWriteStream(local);
-		var rem = request(pdfUrl);
-		rem.on('data', function(chunk) {
+		request(pdfUrl)
+		.on('data', function(chunk) {
 		    file.write(chunk);
-		});
-		rem.on('end', function() {
+		})
+		.on('end', function() {
 			var processor = pdf_extract(local, {type:'text'}, function(err) {
 			  if (err) return callback(err);
 			});
