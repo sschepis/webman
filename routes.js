@@ -18,8 +18,8 @@ exports.slurp = function (req, res, next) {
 		return next();		
 	}
 	var theUrl = req.params.u;
-	if(theUrl.endsWith('.pdf')) theUrl = 'http://stellanet.dyndns.org/pdf?u=' + theUrl;
-	alchemy.transmuteURL(req.params.u, function(err, gold) {
+	if(theUrl.endsWith('.pdf')) theUrl = 'http://stellanet.dnsalias.org:4567/pdf?u=' + theUrl;
+	alchemy.transmuteURL(theUrl, function(err, gold) {
 		var result = { url : gold.url };
 		if(req.params.u.endsWith('.pdf'))
 			result.url = req.params.u;
